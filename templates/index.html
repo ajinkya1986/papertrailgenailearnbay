@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paper Trail (Python) — RAG over 3 AI Papers</title>
+<style>
+  :root{
+    --paper:      #F7F5EF;
+    --paper-raised:#FFFFFF;
+    --ink:        #24211D;
+    --ink-soft:   #5B564C;
+    --rule:       #DCD6C6;
+    --accent:     #8C3A2F;
+    --accent-soft:#F1E3DE;
+    --moss:       #3E5C4E;
+    --moss-soft:  #E4EAE3;
+    --focus:      #2455A4;
+    --mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+    --serif: "Source Serif 4", "Iowan Old Style", Georgia, "Times New Roman", serif;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; background:var(--paper); color:var(--ink); font-family:var(--sans); font-size:16px; line-height:1.5; }
+  a{ color:var(--focus); }
+  .masthead{ border-bottom: 1px solid var(--rule); padding: 28px 24px 22px; background: var(--paper); }
+  .masthead-inner{ max-width: 1080px; margin: 0 auto; display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .masthead h1{ font-family: var(--serif); font-weight: 600; font-size: 30px; margin:0; }
+  .masthead h1 em{ font-style: italic; color: var(--accent); }
+  .masthead p{ margin: 6px 0 0; color: var(--ink-soft); font-size: 14.5px; max-width: 46ch; }
+  .corpus-list{ font-family: var(--mono); font-size: 12.5px; color: var(--ink-soft); text-align: right; line-height:1.7; }
+  .corpus-list .dot{ color: var(--moss); }
+  main{ max-width: 1080px; margin: 0 auto; padding: 32px 24px 80px; display:grid; grid-template-columns: 1.35fr 1fr; gap: 32px; align-items:start; }
+  @media (max-width: 860px){ main{ grid-template-columns: 1fr; } }
+  .card{ background: var(--paper-raised); border:1px solid var(--rule); border-radius: 3px; }
+  .ask-panel{ padding: 22px; }
+  .ask-panel label{ font-family: var(--serif); font-size: 18px; display:block; margin-bottom:10px; }
+  .ask-row{ display:flex; gap:8px; }
+  #question{ flex:1; padding: 11px 13px; border:1px solid var(--rule); border-radius:3px; font-family: var(--sans); font-size:15px; background: var(--paper); }
+  .ask-row button{ padding: 11px 18px; background: var(--ink); color: var(--paper); border:none; border-radius:3px; font-family: var(--sans); font-size:15px; cursor:pointer; }
+  .ask-row button:hover{ background: var(--accent); }
+  .samples{ margin-top:16px; display:flex; flex-wrap:wrap; gap:8px; }
+  .samples form{ margin:0; }
+  .sample-chip{ font-family: var(--sans); font-size: 13px; padding: 6px 12px; border-radius: 20px; border:1px solid var(--rule); background:var(--paper); color:var(--ink-soft); cursor:pointer; }
+  .sample-chip:hover{ border-color: var(--accent); color: var(--accent); }
+  .answer-area{ margin-top:22px; }
+  .status-line{ font-family: var(--mono); font-size: 12.5px; color: var(--ink-soft); min-height: 18px; }
+  .status-line.error{ color: var(--accent); }
+  .answer-block{ font-family: var(--serif); font-size: 18px; line-height:1.65; margin-top:10px; white-space: pre-wrap; }
+  .answer-block .cite{ font-family: var(--sans); font-size: 12px; vertical-align: super; color: var(--moss); background: var(--moss-soft); border-radius: 3px; padding: 1px 4px; text-decoration:none; }
+  .answer-block .cite:hover{ background: var(--moss); color: var(--paper); }
+  .evidence-panel{ padding: 20px; position: sticky; top: 20px; max-height: 88vh; overflow-y:auto; }
+  .evidence-panel h2{ font-family: var(--serif); font-size: 16px; margin: 0 0 4px; }
+  .evidence-panel .sub{ font-size: 12.5px; color: var(--ink-soft); margin: 0 0 14px; }
+  .source-card{ border-top: 1px solid var(--rule); padding: 12px 0; scroll-margin-top: 20px; }
+  .source-card:first-of-type{ border-top:none; padding-top:0; }
+  .source-card:target{ background: var(--accent-soft); }
+  .source-head{ display:flex; justify-content:space-between; gap:8px; align-items:baseline; }
+  .source-paper{ font-weight:600; font-size:14px; }
+  .source-score{ font-family: var(--mono); font-size:11.5px; color: var(--moss); white-space:nowrap; }
+  .source-section{ font-family: var(--mono); font-size:11.5px; color: var(--ink-soft); margin: 2px 0 6px; }
+  .source-snippet{ font-size: 13.5px; color: var(--ink); }
+  .source-snippet mark{ background: #F3D9A6; padding:0 1px; }
+  .source-id{ font-family: var(--mono); font-size: 10.5px; color: var(--ink-soft); opacity:.75; margin-top:4px; }
+  .empty-note{ color: var(--ink-soft); font-size: 13.5px; font-style: italic; }
+  footer{ max-width:1080px; margin: 0 auto; padding: 0 24px 60px; color: var(--ink-soft); font-size:12.5px; }
+  footer .pipeline{ margin-top:10px; line-height:1.8; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <h1>Paper <em>Trail</em> <span style="font-size:14px; color:var(--ink-soft); font-family:var(--mono);">(Python / Flask)</span></h1>
+      <p>Retrieval-augmented question answering over three foundational AI papers. Every step — retrieval, generation, and citation linking — runs in Python on the server.</p>
+    </div>
+    <div class="corpus-list">
+      <div><span class="dot">●</span> Attention Is All You Need (2017)</div>
+      <div><span class="dot">●</span> Retrieval-Augmented Generation (2020)</div>
+      <div><span class="dot">●</span> Language Models are Few-Shot Learners (2020)</div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="card ask-panel">
+    <form method="post" action="/">
+      <label for="question">Ask a question about these papers</label>
+      <div class="ask-row">
+        <input id="question" name="question" type="text" value="{{ question|e }}"
+               placeholder="e.g. Why does scaled dot-product attention divide by sqrt(d_k)?" autocomplete="off">
+        <button type="submit">Ask</button>
+      </div>
+    </form>
+
+    <div class="samples">
+      {% for q in sample_questions %}
+      <form method="post" action="/">
+        <input type="hidden" name="question" value="{{ q }}">
+        <button type="submit" class="sample-chip" title="{{ q }}">{{ q if q|length <= 60 else q[:57] + '…' }}</button>
+      </form>
+      {% endfor %}
+    </div>
+
+    <div class="answer-area">
+      <div class="status-line{{ ' error' if status_is_error else '' }}">{{ status or '' }}</div>
+      {% if answer_html %}
+      <div class="answer-block">{{ answer_html|safe }}</div>
+      {% endif %}
+    </div>
+  </section>
+
+  <aside class="card evidence-panel">
+    <h2>Retrieved evidence</h2>
+    <p class="sub">Top passages the retriever selected for the current question, ranked by cosine similarity.</p>
+    {% if sources %}
+      {% for s in sources %}
+      <div class="source-card" id="source-{{ s.n }}">
+        <div class="source-head">
+          <span class="source-paper">[{{ s.n }}] {{ s.paper_short }} ({{ s.year }})</span>
+          <span class="source-score">cos={{ "%.3f"|format(s.score) }}</span>
+        </div>
+        <div class="source-section">{{ s.section }}</div>
+        <div class="source-snippet">{{ s.snippet_html|safe }}</div>
+        <div class="source-id">{{ s.chunk_id }}</div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p class="empty-note">Ask a question to see which passages were retrieved.</p>
+    {% endif %}
+  </aside>
+</main>
+
+<footer>
+  <details>
+    <summary>How this works (pipeline)</summary>
+    <div class="pipeline">
+      1. <strong>Preprocess</strong> — 3 papers → sections → ~130-word chunks ({{ n_chunks }} chunks total), each tagged with paper + section metadata (build_corpus.py, run once, offline).<br>
+      2. <strong>Retrieve</strong> — your question and every chunk are converted to TF-IDF vectors by scikit-learn on the server (retriever.py); the 8 chunks with highest cosine similarity to your question are selected.<br>
+      3. <strong>Generate</strong> — the question plus the 8 retrieved excerpts are sent to Claude (claude-sonnet-4-6) from the server (generator.py), instructed to answer only from those excerpts and to cite them as [1]..[8].<br>
+      4. <strong>Attribute</strong> — citation markers in the answer are turned into links to the source cards below (app.py's linkify_citations), which show the paper, section, similarity score, and full excerpt text. No JavaScript is used anywhere in this page — the citation links work via plain HTML anchors (<code>#source-n</code>) and the <code>:target</code> CSS pseudo-class.
+    </div>
+  </details>
+</footer>
+
+</body>
+</html>

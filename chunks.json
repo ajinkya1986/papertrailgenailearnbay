@@ -1,0 +1,762 @@
+[
+  {
+    "id": "transformer-00-00",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "Front Matter",
+    "text": "TITLE: Attention Is All You Need AUTHORS: Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, Illia Polosukhin (Google Brain / Google Research / University of Toronto) VENUE: 31st Conference on Neural Information Processing Systems (NIPS 2017)",
+    "word_count": 43
+  },
+  {
+    "id": "transformer-01-00",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "Abstract",
+    "text": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. Experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train. Our model achieves 28.4 BLEU on the WMT 2014 English-to-German translation task, improving over the existing best results, including ensembles, by over 2 BLEU. On the WMT 2014 English-to-French translation task, our model establishes a new single-model state-of-the-art BLEU score of 41.8 after training for 3.5 days on eight GPUs, a small fraction of the training costs of the best models from the literature.",
+    "word_count": 144
+  },
+  {
+    "id": "transformer-01-01",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "Abstract",
+    "text": "We show that the Transformer generalizes well to other tasks by applying it successfully to English constituency parsing both with large and limited training data.",
+    "word_count": 25
+  },
+  {
+    "id": "transformer-02-00",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "1 Introduction",
+    "text": "Recurrent neural networks, long short-term memory and gated recurrent neural networks in particular, have been firmly established as state of the art approaches in sequence modeling and transduction problems such as language modeling and machine translation. Recurrent models typically factor computation along the symbol positions of the input and output sequences. Aligning the positions to steps in computation time, they generate a sequence of hidden states h_t, as a function of the previous hidden state h_{t-1} and the input for position t. This inherently sequential nature precludes parallelization within training examples, which becomes critical at longer sequence lengths, as memory constraints limit batching across examples. Attention mechanisms have become an integral part of compelling sequence modeling and transduction models in various tasks, allowing modeling of dependencies without regard to their distance in the input or output sequences.",
+    "word_count": 137
+  },
+  {
+    "id": "transformer-02-01",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "1 Introduction",
+    "text": "In all but a few cases, however, such attention mechanisms are used in conjunction with a recurrent network. In this work we propose the Transformer, a model architecture eschewing recurrence and instead relying entirely on an attention mechanism to draw global dependencies between input and output. The Transformer allows for significantly more parallelization and can reach a new state of the art in translation quality after being trained for as little as twelve hours on eight P100 GPUs.",
+    "word_count": 78
+  },
+  {
+    "id": "transformer-03-00",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "2 Background",
+    "text": "The goal of reducing sequential computation also forms the foundation of the Extended Neural GPU, ByteNet and ConvS2S, all of which use convolutional neural networks as basic building block, computing hidden representations in parallel for all input and output positions. In these models, the number of operations required to relate signals from two arbitrary input or output positions grows in the distance between positions, linearly for ConvS2S and logarithmically for ByteNet. This makes it more difficult to learn dependencies between distant positions. In the Transformer this is reduced to a constant number of operations, albeit at the cost of reduced effective resolution due to averaging attention-weighted positions, an effect we counteract with Multi-Head Attention. Self-attention, sometimes called intra-attention, is an attention mechanism relating different positions of a single sequence in order to compute a representation of the sequence.",
+    "word_count": 138
+  },
+  {
+    "id": "transformer-03-01",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "2 Background",
+    "text": "To the best of our knowledge, the Transformer is the first transduction model relying entirely on self-attention to compute representations of its input and output without using sequence-aligned RNNs or convolution.",
+    "word_count": 31
+  },
+  {
+    "id": "transformer-04-00",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "3 Model Architecture",
+    "text": "Most competitive neural sequence transduction models have an encoder-decoder structure. Here, the encoder maps an input sequence of symbol representations (x1, ..., xn) to a sequence of continuous representations z = (z1, ..., zn). Given z, the decoder then generates an output sequence (y1, ..., ym) of symbols one element at a time. At each step the model is auto-regressive, consuming the previously generated symbols as additional input when generating the next. The Transformer follows this overall architecture using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder.",
+    "word_count": 92
+  },
+  {
+    "id": "transformer-05-00",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "3.1 Encoder and Decoder Stacks",
+    "text": "Encoder: The encoder is composed of a stack of N = 6 identical layers. Each layer has two sub-layers. The first is a multi-head self-attention mechanism, and the second is a simple, position-wise fully connected feed-forward network. We employ a residual connection around each of the two sub-layers, followed by layer normalization. That is, the output of each sub-layer is LayerNorm(x + Sublayer(x)), where Sublayer(x) is the function implemented by the sub-layer itself. To facilitate these residual connections, all sub-layers in the model, as well as the embedding layers, produce outputs of dimension d_model = 512. Decoder: The decoder is also composed of a stack of N = 6 identical layers. In addition to the two sub-layers in each encoder layer, the decoder inserts a third sub-layer, which performs multi-head attention over the output of the encoder stack.",
+    "word_count": 138
+  },
+  {
+    "id": "transformer-05-01",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "3.1 Encoder and Decoder Stacks",
+    "text": "Similar to the encoder, we employ residual connections around each of the sub-layers, followed by layer normalization. We also modify the self-attention sub-layer in the decoder stack to prevent positions from attending to subsequent positions. This masking, combined with the fact that the output embeddings are offset by one position, ensures that the predictions for position i can depend only on the known outputs at positions less than i.",
+    "word_count": 69
+  },
+  {
+    "id": "transformer-06-00",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "3.2 Attention",
+    "text": "An attention function can be described as mapping a query and a set of key-value pairs to an output, where the query, keys, values, and output are all vectors. The output is computed as a weighted sum of the values, where the weight assigned to each value is computed by a compatibility function of the query with the corresponding key.",
+    "word_count": 60
+  },
+  {
+    "id": "transformer-07-00",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "3.2.1 Scaled Dot-Product Attention",
+    "text": "We call our particular attention \"Scaled Dot-Product Attention\". The input consists of queries and keys of dimension d_k, and values of dimension d_v. We compute the dot products of the query with all keys, divide each by sqrt(d_k), and apply a softmax function to obtain the weights on the values. In practice, we compute the attention function on a set of queries simultaneously, packed together into a matrix Q. The keys and values are also packed together into matrices K and V. We compute the matrix of outputs as: Attention(Q, K, V) = softmax(QK^T / sqrt(d_k)) V. The two most commonly used attention functions are additive attention, and dot-product (multiplicative) attention. Dot-product attention is identical to our algorithm, except for the scaling factor of 1/sqrt(d_k). Additive attention computes the compatibility function using a feed-forward network with a single hidden layer.",
+    "word_count": 140
+  },
+  {
+    "id": "transformer-07-01",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "3.2.1 Scaled Dot-Product Attention",
+    "text": "While the two are similar in theoretical complexity, dot-product attention is much faster and more space-efficient in practice, since it can be implemented using highly optimized matrix multiplication code. While for small values of d_k the two mechanisms perform similarly, additive attention outperforms dot product attention without scaling for larger values of d_k. We suspect that for large values of d_k, the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients. To counteract this effect, we scale the dot products by 1/sqrt(d_k).",
+    "word_count": 91
+  },
+  {
+    "id": "transformer-08-00",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "3.2.2 Multi-Head Attention",
+    "text": "Instead of performing a single attention function with d_model-dimensional keys, values and queries, we found it beneficial to linearly project the queries, keys and values h times with different, learned linear projections to d_k, d_k and d_v dimensions, respectively. On each of these projected versions of queries, keys and values we then perform the attention function in parallel, yielding d_v-dimensional output values. These are concatenated and once again projected, resulting in the final values. Multi-head attention allows the model to jointly attend to information from different representation subspaces at different positions. With a single attention head, averaging inhibits this. MultiHead(Q, K, V) = Concat(head_1, ..., head_h) W^O, where head_i = Attention(Q W_i^Q, K W_i^K, V W_i^V). In this work we employ h = 8 parallel attention layers, or heads. For each of these we use d_k = d_v = d_model/h = 64.",
+    "word_count": 142
+  },
+  {
+    "id": "transformer-08-01",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "3.2.2 Multi-Head Attention",
+    "text": "Due to the reduced dimension of each head, the total computational cost is similar to that of single-head attention with full dimensionality.",
+    "word_count": 22
+  },
+  {
+    "id": "transformer-09-00",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "3.2.3 Applications of Attention in our Model",
+    "text": "The Transformer uses multi-head attention in three different ways: (1) In \"encoder-decoder attention\" layers, the queries come from the previous decoder layer, and the memory keys and values come from the output of the encoder. This allows every position in the decoder to attend over all positions in the input sequence. (2) The encoder contains self-attention layers. In a self-attention layer all of the keys, values and queries come from the same place, in this case, the output of the previous layer in the encoder. Each position in the encoder can attend to all positions in the previous layer of the encoder. (3) Similarly, self-attention layers in the decoder allow each position in the decoder to attend to all positions in the decoder up to and including that position, with leftward information flow prevented (masked) to preserve the auto-regressive property.",
+    "word_count": 140
+  },
+  {
+    "id": "transformer-10-00",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "3.3 Position-wise Feed-Forward Networks",
+    "text": "In addition to attention sub-layers, each of the layers in our encoder and decoder contains a fully connected feed-forward network, which is applied to each position separately and identically. This consists of two linear transformations with a ReLU activation in between: FFN(x) = max(0, x W1 + b1) W2 + b2. While the linear transformations are the same across different positions, they use different parameters from layer to layer. The dimensionality of input and output is d_model = 512, and the inner-layer has dimensionality d_ff = 2048.",
+    "word_count": 87
+  },
+  {
+    "id": "transformer-11-00",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "3.4 Embeddings and Softmax",
+    "text": "Similarly to other sequence transduction models, we use learned embeddings to convert the input tokens and output tokens to vectors of dimension d_model. We also use the usual learned linear transformation and softmax function to convert the decoder output to predicted next-token probabilities. In our model, we share the same weight matrix between the two embedding layers and the pre-softmax linear transformation. In the embedding layers, we multiply those weights by sqrt(d_model).",
+    "word_count": 72
+  },
+  {
+    "id": "transformer-12-00",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "3.5 Positional Encoding",
+    "text": "Since our model contains no recurrence and no convolution, in order for the model to make use of the order of the sequence, we must inject some information about the relative or absolute position of the tokens in the sequence. To this end, we add \"positional encodings\" to the input embeddings at the bottoms of the encoder and decoder stacks. The positional encodings have the same dimension d_model as the embeddings, so that the two can be summed. In this work, we use sine and cosine functions of different frequencies: PE(pos, 2i) = sin(pos / 10000^(2i/d_model)) and PE(pos, 2i+1) = cos(pos / 10000^(2i/d_model)), where pos is the position and i is the dimension. That is, each dimension of the positional encoding corresponds to a sinusoid. The wavelengths form a geometric progression from 2*pi to 10000*2*pi.",
+    "word_count": 135
+  },
+  {
+    "id": "transformer-12-01",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "3.5 Positional Encoding",
+    "text": "We chose this function because we hypothesized it would allow the model to easily learn to attend by relative positions, since for any fixed offset k, PE_{pos+k} can be represented as a linear function of PE_pos. We also experimented with using learned positional embeddings instead, and found that the two versions produced nearly identical results. We chose the sinusoidal version because it may allow the model to extrapolate to sequence lengths longer than the ones encountered during training.",
+    "word_count": 78
+  },
+  {
+    "id": "transformer-13-00",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "4 Why Self-Attention",
+    "text": "In this section we compare various aspects of self-attention layers to the recurrent and convolutional layers commonly used for mapping one variable-length sequence of symbol representations to another sequence of equal length. Motivating our use of self-attention we consider three desiderata: the total computational complexity per layer, the amount of computation that can be parallelized (measured by the minimum number of sequential operations required), and the path length between long-range dependencies in the network. The shorter these paths between any combination of positions in the input and output sequences, the easier it is to learn long-range dependencies. A self-attention layer connects all positions with a constant number of sequentially executed operations (O(1)), whereas a recurrent layer requires O(n) sequential operations. In terms of computational complexity, self-attention layers are faster than recurrent layers when the sequence length n is smaller than the representation dimensionality d, which is most often the case with sentence representations used by state-of-the-art models.",
+    "word_count": 157
+  },
+  {
+    "id": "transformer-13-01",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "4 Why Self-Attention",
+    "text": "A single convolutional layer with kernel width k < n does not connect all pairs of input and output positions; doing so requires a stack of O(n/k) convolutional layers (contiguous kernels) or O(log_k(n)) layers (dilated convolutions), increasing the maximum path length. As a side benefit, self-attention could yield more interpretable models; individual attention heads clearly learn to perform different tasks and many appear to exhibit behavior related to the syntactic and semantic structure of sentences. Table 1 comparison (Complexity per Layer, Sequential Operations, Maximum Path Length): Self-Attention: O(n^2 * d), O(1), O(1). Recurrent: O(n * d^2), O(n), O(n). Convolutional: O(k * n * d^2), O(1), O(log_k(n)). Self-Attention (restricted to neighborhood size r): O(r * n * d), O(1), O(n/r).",
+    "word_count": 119
+  },
+  {
+    "id": "transformer-14-00",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "5 Training",
+    "text": "5.1 Training Data and Batching: We trained on the standard WMT 2014 English-German dataset consisting of about 4.5 million sentence pairs, encoded using byte-pair encoding with a shared source-target vocabulary of about 37000 tokens. For English-French, we used the WMT 2014 English-French dataset consisting of 36M sentences split into a 32000 word-piece vocabulary. Each training batch contained sentence pairs with approximately 25000 source tokens and 25000 target tokens. 5.2 Hardware and Schedule: We trained our models on one machine with 8 NVIDIA P100 GPUs. Base models trained for 100,000 steps or 12 hours (0.4 seconds per step). The big models were trained for 300,000 steps (3.5 days, 1.0 second per step). 5.3 Optimizer: We used the Adam optimizer with beta1 = 0.9, beta2 = 0.98 and epsilon = 1e-9. The learning rate was varied according to lrate = d_model^-0.5 * min(step_num^-0.5, step_num * warmup_steps^-1.5), with warmup_steps = 4000. 5.4 Regularization: We employ Residual Dropout, applied to the output of each sub-layer before it is added to the sub-layer input and normalized, and to the sums of the embeddings and positional encodings, with rate P_drop = 0.1 for the base model.",
+    "word_count": 190
+  },
+  {
+    "id": "transformer-14-01",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "5 Training",
+    "text": "We also employ Label Smoothing of value epsilon_ls = 0.1, which hurts perplexity but improves accuracy and BLEU score.",
+    "word_count": 19
+  },
+  {
+    "id": "transformer-15-00",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "6 Results",
+    "text": "6.1 Machine Translation: On WMT 2014 English-to-German, the big Transformer model outperforms the best previously reported models (including ensembles) by more than 2.0 BLEU, establishing a new state-of-the-art BLEU score of 28.4, trained for 3.5 days on 8 P100 GPUs. The base model surpasses all previously published models and ensembles at a fraction of the training cost. On WMT 2014 English-to-French, the big model achieves a BLEU score of 41.8 (41.0 in some reporting), outperforming all previously published single models at less than 1/4 the training cost of the previous state-of-the-art model. We used beam search with a beam size of 4 and length penalty alpha = 0.6. 6.2 Model Variations: Varying the number of attention heads and attention key/value dimensions while keeping computation constant shows that single-head attention is 0.9 BLEU worse than the best setting, and quality also drops off with too many heads.",
+    "word_count": 146
+  },
+  {
+    "id": "transformer-15-01",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "6 Results",
+    "text": "Reducing the attention key size d_k hurts model quality. Bigger models are better, and dropout is very helpful in avoiding over-fitting. Replacing sinusoidal positional encoding with learned positional embeddings gives nearly identical results. 6.3 English Constituency Parsing: We trained a 4-layer transformer with d_model = 1024 on the Wall Street Journal (WSJ) portion of the Penn Treebank (about 40K training sentences), and also in a semi-supervised setting with approximately 17M sentences. The Transformer performs surprisingly well at this task, outperforming all previously reported models except the Recurrent Neural Network Grammar, and outperforms the BerkeleyParser even when trained only on the 40K-sentence WSJ training set.",
+    "word_count": 104
+  },
+  {
+    "id": "transformer-16-00",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "7 Conclusion",
+    "text": "In this work, we presented the Transformer, the first sequence transduction model based entirely on attention, replacing the recurrent layers most commonly used in encoder-decoder architectures with multi-headed self-attention. For translation tasks, the Transformer can be trained significantly faster than architectures based on recurrent or convolutional layers, achieving a new state of the art on both WMT 2014 English-to-German and English-to-French translation tasks. We are excited about the future of attention-based models and plan to apply them to other tasks, extending the Transformer to problems involving input and output modalities other than text, and to investigate local, restricted attention mechanisms for large inputs and outputs such as images, audio and video. Making generation less sequential is another research goal. The code used to train and evaluate the models is available at the tensor2tensor GitHub repository.",
+    "word_count": 135
+  },
+  {
+    "id": "transformer-17-00",
+    "paper_id": "transformer",
+    "paper_title": "Attention Is All You Need",
+    "paper_short": "Transformer",
+    "year": 2017,
+    "section": "Attention Visualizations (Appendix)",
+    "text": "Figure 3 shows an example of the attention mechanism following long-distance dependencies in the encoder self-attention in layer 5 of 6: many attention heads attend to a distant dependency of the verb \"making\", completing the phrase \"making...more difficult\". Figures 4 and 5 show attention heads apparently involved in anaphora resolution and heads that exhibit behaviour related to the structure of the sentence, demonstrating that different heads clearly learn to perform different tasks.",
+    "word_count": 72
+  },
+  {
+    "id": "rag-00-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "Front Matter",
+    "text": "TITLE: Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks AUTHORS: Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio Petroni, Vladimir Karpukhin, Naman Goyal, Heinrich Kuttler, Mike Lewis, Wen-tau Yih, Tim Rocktaschel, Sebastian Riedel, Douwe Kiela (Facebook AI Research, University College London, New York University)",
+    "word_count": 41
+  },
+  {
+    "id": "rag-01-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "Abstract",
+    "text": "Large pre-trained language models have been shown to store factual knowledge in their parameters, and achieve state-of-the-art results when fine-tuned on downstream NLP tasks. However, their ability to access and precisely manipulate knowledge is still limited, and hence on knowledge-intensive tasks, their performance lags behind task-specific architectures. Additionally, providing provenance for their decisions and updating their world knowledge remain open research problems. Pre-trained models with a differentiable access mechanism to explicit non-parametric memory have so far been only investigated for extractive downstream tasks. We explore a general-purpose fine-tuning recipe for retrieval-augmented generation (RAG) - models which combine pre-trained parametric and non-parametric memory for language generation. We introduce RAG models where the parametric memory is a pre-trained seq2seq model and the non-parametric memory is a dense vector index of Wikipedia, accessed with a pre-trained neural retriever.",
+    "word_count": 135
+  },
+  {
+    "id": "rag-01-01",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "Abstract",
+    "text": "We compare two RAG formulations, one which conditions on the same retrieved passages across the whole generated sequence, and another which can use different passages per token. We fine-tune and evaluate our models on a wide range of knowledge-intensive NLP tasks and set the state of the art on three open domain QA tasks, outperforming parametric seq2seq models and task-specific retrieve-and-extract architectures. For language generation tasks, we find that RAG models generate more specific, diverse and factual language than a state-of-the-art parametric-only seq2seq baseline.",
+    "word_count": 84
+  },
+  {
+    "id": "rag-02-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "1 Introduction",
+    "text": "Pre-trained neural language models have been shown to learn a substantial amount of in-depth knowledge from data. They can do so without any access to an external memory, as a parameterized implicit knowledge base. While this development is exciting, such models do have downsides: They cannot easily expand or revise their memory, can't straightforwardly provide insight into their predictions, and may produce \"hallucinations\". Hybrid models that combine parametric memory with non-parametric (i.e., retrieval-based) memories can address some of these issues because knowledge can be directly revised and expanded, and accessed knowledge can be inspected and interpreted. REALM and ORQA, two recently introduced models that combine masked language models with a differentiable retriever, have shown promising results, but have only explored open-domain extractive question answering. Here, we bring hybrid parametric and non-parametric memory to the \"workhorse of NLP\", i.e. sequence-to-sequence (seq2seq) models.",
+    "word_count": 141
+  },
+  {
+    "id": "rag-02-01",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "1 Introduction",
+    "text": "We endow pre-trained, parametric-memory generation models with a non-parametric memory through a general-purpose fine-tuning approach which we refer to as retrieval-augmented generation (RAG). We build RAG models where the parametric memory is a pre-trained seq2seq transformer, and the non-parametric memory is a dense vector index of Wikipedia, accessed with a pre-trained neural retriever. We combine these components in a probabilistic model trained end-to-end. The retriever (Dense Passage Retriever, DPR) provides latent documents conditioned on the input, and the seq2seq model (BART) then conditions on these latent documents together with the input to generate the output. We marginalize the latent documents with a top-K approximation, either on a per-output basis (assuming the same document is responsible for all tokens) or a per-token basis (where different documents are responsible for different tokens).",
+    "word_count": 130
+  },
+  {
+    "id": "rag-02-02",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "1 Introduction",
+    "text": "Like T5 or BART, RAG can be fine-tuned on any seq2seq task, whereby both the generator and retriever are jointly learned. Our RAG models achieve state-of-the-art results on open Natural Questions, WebQuestions and CuratedTrec and strongly outperform recent approaches that use specialised pre-training objectives on TriviaQA. Despite these being extractive tasks, we find that unconstrained generation outperforms previous extractive approaches. For knowledge-intensive generation, we experiment with MS-MARCO and Jeopardy question generation, and we find that our models generate responses that are more factual, specific, and diverse than a BART baseline. For FEVER fact verification, we achieve results within 4.3% of state-of-the-art pipeline models which use strong retrieval supervision. Finally, we demonstrate that the non-parametric memory can be replaced to update the models' knowledge as the world changes. Code to run experiments with RAG has been open-sourced as part of the HuggingFace Transformers Library.",
+    "word_count": 143
+  },
+  {
+    "id": "rag-03-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "2 Methods (Overview)",
+    "text": "We explore RAG models, which use the input sequence x to retrieve text documents z and use them as additional context when generating the target sequence y. Our models leverage two components: (i) a retriever p_eta(z|x) with parameters eta that returns (top-K truncated) distributions over text passages given a query x, and (ii) a generator p_theta(y_i | x, z, y_{1:i-1}) parametrized by theta that generates a current token based on a context of the previous i-1 tokens, the original input x, and a retrieved passage z. To train the retriever and generator end-to-end, we treat the retrieved document as a latent variable. We propose two models that marginalize over the latent documents in different ways to produce a distribution over generated text: RAG-Sequence and RAG-Token.",
+    "word_count": 125
+  },
+  {
+    "id": "rag-04-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "2.1 Models - RAG-Sequence and RAG-Token",
+    "text": "RAG-Sequence Model: The RAG-Sequence model uses the same retrieved document to generate the complete sequence. It treats the retrieved document as a single latent variable that is marginalized to get the seq2seq probability p(y|x) via a top-K approximation: the top K documents are retrieved using the retriever, and the generator produces the output sequence probability for each document, which are then marginalized: p_RAG-Sequence(y|x) is approximately the sum over the top-k retrieved documents z of p_eta(z|x) times the product over tokens of p_theta(y_i | x, z, y_{1:i-1}). RAG-Token Model: In the RAG-Token model we can draw a different latent document for each target token and marginalize accordingly. This allows the generator to choose content from several documents when producing an answer. The top K documents are retrieved, and then the generator produces a distribution for the next output token for each document, before marginalizing, and repeating the process with the following output token.",
+    "word_count": 152
+  },
+  {
+    "id": "rag-04-01",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "2.1 Models - RAG-Sequence and RAG-Token",
+    "text": "RAG can be used for sequence classification tasks by considering the target class as a target sequence of length one, in which case RAG-Sequence and RAG-Token are equivalent.",
+    "word_count": 28
+  },
+  {
+    "id": "rag-05-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "2.2 Retriever: DPR",
+    "text": "The retrieval component p_eta(z|x) is based on DPR (Dense Passage Retriever). DPR follows a bi-encoder architecture: p_eta(z|x) is proportional to exp(d(z)^T q(x)), where d(z) = BERT_d(z) is a dense representation of a document produced by a BERT_BASE document encoder, and q(x) = BERT_q(x) is a query representation produced by a query encoder, also based on BERT_BASE. Calculating the top-k documents with highest prior probability p_eta(z|x) is a Maximum Inner Product Search (MIPS) problem, which can be approximately solved in sub-linear time. We use a pre-trained bi-encoder from DPR to initialize our retriever and to build the document index. This retriever was trained to retrieve documents which contain answers to TriviaQA and Natural Questions questions. We refer to the document index as the non-parametric memory.",
+    "word_count": 124
+  },
+  {
+    "id": "rag-06-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "2.3 Generator: BART",
+    "text": "The generator component p_theta(y_i | x, z, y_{1:i-1}) could be modelled using any encoder-decoder. We use BART-large, a pre-trained seq2seq transformer with 400M parameters. To combine the input x with the retrieved content z when generating from BART, we simply concatenate them. BART was pre-trained using a denoising objective and a variety of different noising functions, and has obtained state-of-the-art results on a diverse set of generation tasks. We refer to the BART generator parameters theta as the parametric memory.",
+    "word_count": 80
+  },
+  {
+    "id": "rag-07-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "2.4 Training",
+    "text": "We jointly train the retriever and generator components without any direct supervision on what document should be retrieved. Given a fine-tuning training corpus of input/output pairs (x_j, y_j), we minimize the negative marginal log-likelihood of each target using stochastic gradient descent with Adam. Updating the document encoder BERT_d during training is costly as it requires the document index to be periodically updated, as REALM does during pre-training. We do not find this step necessary for strong performance, and keep the document encoder (and index) fixed, only fine-tuning the query encoder BERT_q and the BART generator.",
+    "word_count": 95
+  },
+  {
+    "id": "rag-08-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "2.5 Decoding",
+    "text": "At test time, RAG-Sequence and RAG-Token require different ways to approximate arg max_y p(y|x). The RAG-Token model can be seen as a standard, autoregressive seq2seq generator, so a standard beam decoder can be used. For RAG-Sequence, the likelihood p(y|x) does not break into a conventional per-token likelihood, so we cannot solve it with a single beam search; instead, we run beam search for each document z, scoring each hypothesis, and then estimate the probability of a hypothesis y by running an additional forward pass for each document, multiplying generator probability with p_eta(z|x), and summing across beams (\"Thorough Decoding\"), or a faster approximation (\"Fast Decoding\") that avoids extra forward passes for longer output sequences.",
+    "word_count": 113
+  },
+  {
+    "id": "rag-09-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "3 Experiments (Setup)",
+    "text": "We experiment with RAG in a wide range of knowledge-intensive tasks. For all experiments, we use a single Wikipedia dump (December 2018) as the non-parametric knowledge source. Each Wikipedia article is split into disjoint 100-word chunks, to make a total of 21M documents. We use the document encoder to compute an embedding for each document, and build a single MIPS index using FAISS with a Hierarchical Navigable Small World approximation for fast retrieval. During training, we retrieve the top k documents for each query, considering k in {5, 10}.",
+    "word_count": 89
+  },
+  {
+    "id": "rag-10-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "3.1 Open-domain Question Answering",
+    "text": "Open-domain question answering (QA) is an important real-world application and common testbed for knowledge-intensive tasks. We treat questions and answers as input-output text pairs (x, y) and train RAG by directly minimizing the negative log-likelihood of answers. We compare RAG to the popular extractive QA paradigm, where answers are extracted spans from retrieved documents, and to \"Closed-Book QA\" approaches, which generate answers without exploiting retrieval, relying purely on parametric knowledge. We consider four open-domain QA datasets: Natural Questions (NQ), TriviaQA (TQA), WebQuestions (WQ) and CuratedTrec (CT).",
+    "word_count": 86
+  },
+  {
+    "id": "rag-11-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "3.2 Abstractive Question Answering",
+    "text": "RAG models can go beyond simple extractive QA and answer questions with free-form, abstractive text generation. To test RAG's natural language generation (NLG) in a knowledge-intensive setting, we use the MSMARCO NLG task, treating it as an open-domain abstractive QA task (using only questions and answers, not the supplied gold passages). Some MSMARCO questions cannot be answered using Wikipedia alone; here RAG can rely on parametric knowledge to generate reasonable responses.",
+    "word_count": 71
+  },
+  {
+    "id": "rag-12-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "3.3 Jeopardy Question Generation",
+    "text": "To evaluate RAG's generation abilities in a non-QA setting, we study open-domain question generation using the demanding task of generating Jeopardy questions - trying to guess an entity from a fact about that entity. As this is a new task, we train a BART model for comparison, evaluate using the SQuAD-tuned Q-BLEU-1 metric, and also perform human evaluations of generation factuality and specificity.",
+    "word_count": 63
+  },
+  {
+    "id": "rag-13-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "3.4 Fact Verification",
+    "text": "FEVER requires classifying whether a natural language claim is supported or refuted by Wikipedia, or whether there is not enough information to decide. This is a retrieval problem coupled with a challenging entailment reasoning task, and provides a testbed for exploring RAG's ability to handle classification rather than generation. We map FEVER class labels to single output tokens and directly train with claim-class pairs, without using supervision on retrieved evidence.",
+    "word_count": 70
+  },
+  {
+    "id": "rag-14-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "4 Results",
+    "text": "4.1 Open-domain Question Answering: RAG sets a new state of the art on all four open-domain QA tasks (only on the T5-comparable split for TQA), scoring 44.5 (RAG-Sequence) / 44.1 (RAG-Token) Exact Match on Natural Questions, compared to 41.5 for DPR and 40.4 for REALM. RAG combines the generation flexibility of \"closed-book\" (parametric-only) approaches with the performance of \"open-book\" retrieval-based approaches, and demonstrates that neither a re-ranker nor an extractive reader is necessary for state-of-the-art performance. RAG can generate correct answers even when the correct answer is not in any retrieved document, achieving 11.8% accuracy in such cases for NQ, where an extractive model would score 0%. 4.2 Abstractive Question Answering: RAG-Sequence outperforms BART on Open MS-MARCO NLG by 2.6 Bleu points and 2.6 Rouge-L points. RAG models hallucinate less and generate factually correct text more often than BART. 4.3 Jeopardy Question Generation: RAG-Token performs better than RAG-Sequence on Jeopardy question generation, with both models outperforming BART on Q-BLEU-1.",
+    "word_count": 159
+  },
+  {
+    "id": "rag-14-01",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "4 Results",
+    "text": "Human evaluators indicated that BART was more factual than RAG in only 7.1% of cases, while RAG was more factual in 42.7% of cases. RAG-Token may perform best on this task because it can generate responses that combine content from several documents, drawing on different retrieved documents for different parts of the generated text (e.g. different documents inform generating \"The Sun Also Rises\" versus \"A Farewell to Arms\" for an author-based Jeopardy clue about Hemingway). 4.4 Fact Verification: For 3-way FEVER classification, RAG scores are within 4.3% of state-of-the-art pipeline models with strong retrieval supervision. The top retrieved document is from a gold evidence article in 71% of cases, and a gold article is present in the top 10 retrieved articles in 90% of cases.",
+    "word_count": 125
+  },
+  {
+    "id": "rag-15-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "4.5 Additional Results",
+    "text": "Generation Diversity: RAG models are more factual and specific than BART for Jeopardy question generation. RAG-Sequence's generations are more diverse than RAG-Token's, and both are significantly more diverse than BART, without needing any diversity-promoting decoding. Retrieval Ablations: Freezing the retriever during training (not learning retrieval) hurts results on all tasks, showing learned retrieval is a key feature of RAG. Compared to a fixed BM25 word-overlap retriever, RAG's dense (DPR-based) retriever improves results on most tasks, especially Open-Domain QA; for FEVER, BM25 performs best, perhaps because FEVER claims are heavily entity-centric and well-suited to word-overlap retrieval. Index Hot-swapping: An advantage of non-parametric memory models like RAG is that knowledge can be easily updated at test time by simply replacing the document index, without further training. Parametric-only models like T5 or BART need further training to update their behavior as the world changes.",
+    "word_count": 141
+  },
+  {
+    "id": "rag-15-01",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "4.5 Additional Results",
+    "text": "Using a 2016 Wikipedia index versus a 2018 index and querying about world leaders who changed between those dates, RAG answers correctly 70% of the time with the matching-year index but only 4-12% of the time with a mismatched index, demonstrating that RAG's world knowledge can be updated by simply replacing its non-parametric memory. Effect of Retrieving More Documents: Retrieving more documents at test time monotonically improves Open-domain QA results for RAG-Sequence, but performance for RAG-Token peaks at around 10 retrieved documents.",
+    "word_count": 82
+  },
+  {
+    "id": "rag-16-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "5 Related Work",
+    "text": "Prior work has shown that retrieval improves performance across a variety of NLP tasks considered in isolation, including open-domain question answering, fact checking, fact completion, long-form question answering, Wikipedia article generation, dialogue, translation, and language modeling. RAG unifies these previous successes in incorporating retrieval into individual tasks, showing that a single retrieval-based architecture is capable of achieving strong performance across several tasks. This contrasts with general-purpose architectures for NLP such as BERT, GPT-2, BART and T5, which achieve strong performance without the use of retrieval. RAG's document index can be seen as a large external memory for neural networks to attend to, analogous to memory networks, but with the key feature that the memory is comprised of raw human-readable and human-writable text rather than distributed representations, enabling interpretability and dynamic updating.",
+    "word_count": 131
+  },
+  {
+    "id": "rag-17-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "6 Discussion",
+    "text": "In this work, we presented hybrid generation models with access to parametric and non-parametric memory, obtaining state-of-the-art results on open-domain QA. We found that people prefer RAG's generations over purely parametric BART, finding RAG more factual and specific. We illustrated how the retrieval index can be hot-swapped to update the model without requiring any retraining. In future work, it may be fruitful to investigate if the two components can be jointly pre-trained from scratch.",
+    "word_count": 74
+  },
+  {
+    "id": "rag-18-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "Broader Impact",
+    "text": "This work offers positive societal benefits: being more strongly grounded in real factual knowledge (in this case Wikipedia) makes RAG \"hallucinate\" less, with generations that are more factual, and offers more control and interpretability. RAG could be employed with a medical index and asked open-domain questions on that topic, or help people be more effective at their jobs. Potential downsides include that Wikipedia, or any external knowledge source, will probably never be entirely factual and free of bias; since RAG can be employed as a language model, similar concerns as for GPT-2 are valid, including potential use to generate misleading content, impersonate others, or automate spam/phishing content.",
+    "word_count": 107
+  },
+  {
+    "id": "rag-19-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "Appendix - Implementation Details",
+    "text": "For Open-domain QA, test numbers use 15 retrieved documents for RAG-Token models and 50 retrieved documents for RAG-Sequence models (using Thorough Decoding since answers are generally short). Greedy decoding is used for QA. For Open-MSMarco and Jeopardy question generation, ten retrieved documents are used for both RAG-Token and RAG-Sequence, with a beam size of four and Fast Decoding for RAG-Sequence.",
+    "word_count": 60
+  },
+  {
+    "id": "rag-20-00",
+    "paper_id": "rag",
+    "paper_title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "paper_short": "RAG",
+    "year": 2020,
+    "section": "Appendix - Parameters",
+    "text": "RAG models contain the trainable parameters for the BERT-base query and document encoder of DPR (110M parameters each, though the document encoder is not trained further) and 406M trainable parameters from BART-large, making a total of 626M trainable parameters. The non-parametric memory index does not consist of trainable parameters but consists of 21M 728-dimensional vectors (15.3B values), which can be stored at 8-bit floating point precision to manage memory and disk footprints.",
+    "word_count": 72
+  },
+  {
+    "id": "gpt3-00-00",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "Front Matter",
+    "text": "TITLE: Language Models are Few-Shot Learners AUTHORS: Tom B. Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared Kaplan, and many others (OpenAI)",
+    "word_count": 22
+  },
+  {
+    "id": "gpt3-01-00",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "Abstract",
+    "text": "Recent work has demonstrated substantial gains on many NLP tasks and benchmarks by pre-training on a large corpus of text followed by fine-tuning on a specific task. While typically task-agnostic in architecture, this method still requires task-specific fine-tuning datasets of thousands or tens of thousands of examples. By contrast, humans can generally perform a new language task from only a few examples or from simple instructions - something which current NLP systems still largely struggle to do. Here we show that scaling up language models greatly improves task-agnostic, few-shot performance, sometimes even reaching competitiveness with prior state-of-the-art fine-tuning approaches. Specifically, we train GPT-3, an autoregressive language model with 175 billion parameters, 10x more than any previous non-sparse language model, and test its performance in the few-shot setting. For all tasks, GPT-3 is applied without any gradient updates or fine-tuning, with tasks and few-shot demonstrations specified purely via text interaction with the model.",
+    "word_count": 152
+  },
+  {
+    "id": "gpt3-01-01",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "Abstract",
+    "text": "GPT-3 achieves strong performance on many NLP datasets, including translation, question-answering, and cloze tasks, as well as several tasks that require on-the-fly reasoning or domain adaptation, such as unscrambling words, using a novel word in a sentence, or performing 3-digit arithmetic. At the same time, we also identify some datasets where GPT-3's few-shot learning still struggles, as well as some datasets where GPT-3 faces methodological issues related to training on large web corpora. Finally, we find that GPT-3 can generate samples of news articles which human evaluators have difficulty distinguishing from articles written by humans.",
+    "word_count": 95
+  },
+  {
+    "id": "gpt3-02-00",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "1 Introduction",
+    "text": "Recent years have featured a trend towards pre-trained language representations in NLP systems, applied in increasingly flexible and task-agnostic ways for downstream transfer: first single-layer word vector representations, then RNNs with multiple layers of representations, and more recently pre-trained recurrent or transformer language models that are directly fine-tuned, entirely removing the need for task-specific architectures. This last paradigm has led to substantial progress on many challenging NLP tasks, but a major limitation is that while the architecture is task-agnostic, there is still a need for task-specific datasets and task-specific fine-tuning: strong performance typically requires fine-tuning on a dataset of thousands to hundreds of thousands of examples specific to that task. This is undesirable because it limits applicability wherever large labeled datasets are hard to collect, because narrow fine-tuning distributions can encourage the model to exploit spurious correlations, and because humans do not require large supervised datasets to learn most language tasks - a brief natural-language directive or a tiny number of demonstrations is often enough for a human to perform a new task competently.",
+    "word_count": 174
+  },
+  {
+    "id": "gpt3-02-01",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "1 Introduction",
+    "text": "One potential route towards addressing these issues is meta-learning - in the context of language models, this means the model develops a broad set of skills and pattern recognition abilities at training time, and then uses those abilities at inference time to rapidly adapt to or recognize the desired task. Recent work attempts to do this via what the authors call \"in-context learning\", using the text input of a pretrained language model as a form of task specification: the model is conditioned on a natural language instruction and/or a few demonstrations of the task and is then expected to complete further instances of the task simply by predicting what comes next. The paper uses the term \"meta-learning\" to capture the inner-loop/outer-loop structure of the general method, and \"in-context learning\" to refer to the inner loop of meta-learning, further specialized into \"zero-shot\", \"one-shot\", or \"few-shot\" depending on how many demonstrations are provided at inference time.",
+    "word_count": 154
+  },
+  {
+    "id": "gpt3-02-02",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "1 Introduction",
+    "text": "Another relevant trend is that transformer language model capacity has increased rapidly (from 100 million to over 17 billion parameters in successive works), with each increase bringing improvements in text synthesis and/or downstream NLP tasks; since in-context learning involves absorbing many skills and tasks within the parameters of the model, it is plausible that in-context learning abilities might show similarly strong gains with scale. This paper tests that hypothesis by training a 175 billion parameter autoregressive language model, called GPT-3, and measuring its in-context learning abilities on over two dozen NLP datasets as well as several novel tasks designed to test rapid adaptation. For each task, GPT-3 is evaluated under three conditions: few-shot learning (as many demonstrations as fit in the context window, typically 10 to 100), one-shot learning (only one demonstration), and zero-shot learning (no demonstrations, only a natural language instruction).",
+    "word_count": 142
+  },
+  {
+    "id": "gpt3-02-03",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "1 Introduction",
+    "text": "GPT-3 achieves promising zero-shot and one-shot results and, in the few-shot setting, is sometimes competitive with or even occasionally surpasses fine-tuned state-of-the-art models, for example reaching 81.5/84.0/85.0 F1 on CoQA in the zero/one/few-shot settings, and 64.3%/68.0%/71.2% accuracy on TriviaQA (the few-shot result being state-of-the-art relative to fine-tuned closed-book models). GPT-3 also displays one-shot and few-shot proficiency at tasks designed to test rapid adaptation or on-the-fly reasoning, such as unscrambling words, performing arithmetic, and using novel words in a sentence after seeing them defined only once, and can generate synthetic news articles that human evaluators struggle to distinguish from human-written ones. The paper also studies data contamination (overlap between training data and benchmark test sets) and discusses broader societal impacts including bias, fairness, and misuse.",
+    "word_count": 124
+  },
+  {
+    "id": "gpt3-03-00",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "2 Approach",
+    "text": "The basic pre-training approach - model, data, and training - is similar to GPT-2, with straightforward scaling up of model size, dataset size and diversity, and training length; the use of in-context learning is also similar to GPT-2, but this work systematically explores different settings for learning within the context. The paper identifies four points on a spectrum of how much task-specific data different approaches rely on: - Fine-Tuning (FT): the most common approach in recent years, involving updating the weights of a pre-trained model by training on a supervised dataset specific to the desired task, typically using thousands to hundreds of thousands of labeled examples. Its main advantage is strong benchmark performance; its disadvantages are the need for a new large dataset per task, potential for poor out-of-distribution generalization, and potential to exploit spurious features of the training data.",
+    "word_count": 140
+  },
+  {
+    "id": "gpt3-03-01",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "2 Approach",
+    "text": "GPT-3 itself is not fine-tuned in this paper, though it could in principle be. - Few-Shot (FS): the model is given a few demonstrations of the task at inference time as conditioning, but no weight updates are allowed. For a typical dataset, an example has a context and a desired completion; few-shot gives K examples of context and completion, then one final context, with the model expected to produce the completion. K is typically set in the range of 10 to 100, as many examples as can fit in the model's context window (n_ctx = 2048). The main advantage is a major reduction in the need for task-specific data; the main disadvantage is that results have so far been worse than state-of-the-art fine-tuned models, and a small amount of task-specific data is still required. - One-Shot (1S): the same as few-shot except only one demonstration is allowed, in addition to a natural language description of the task.",
+    "word_count": 157
+  },
+  {
+    "id": "gpt3-03-02",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "2 Approach",
+    "text": "One-shot is distinguished because it most closely matches how some tasks are communicated to humans (e.g., giving one demonstration on a crowdworking task). - Zero-Shot (0S): the same as one-shot except no demonstrations are allowed; the model is given only a natural language instruction describing the task. This provides maximum convenience and robustness but is the most challenging setting, since it may even be difficult for humans to understand a task's format without examples. Table 2.1 lists the eight model sizes trained, from GPT-3 Small (125M parameters, 12 layers, d_model=768, 12 heads) up to the full GPT-3 (175B parameters, 96 layers, d_model=12288, 96 heads), all trained for a total of 300 billion tokens with a context window of n_ctx = 2048 tokens.",
+    "word_count": 122
+  },
+  {
+    "id": "gpt3-04-00",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "2.1 Model and Architectures",
+    "text": "GPT-3 uses the same model and architecture as GPT-2, including modified initialization, pre-normalization, and reversible tokenization, except that GPT-3 uses alternating dense and locally banded sparse attention patterns in the layers of the transformer, similar to the Sparse Transformer. Eight different model sizes are trained, ranging over three orders of magnitude from 125 million to 175 billion parameters (the largest being \"GPT-3\"), to study how ML performance depends on model size; prior work suggests validation loss should scale as an approximately smooth power law with size. The model is partitioned across GPUs along both the depth and width dimensions to minimize data-transfer between nodes.",
+    "word_count": 104
+  },
+  {
+    "id": "gpt3-05-00",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "2.2 Training Dataset",
+    "text": "GPT-3 is trained primarily on a filtered version of Common Crawl (constituting nearly a trillion words unfiltered), improved via three steps: (1) filtering a version of Common Crawl based on similarity to high-quality reference corpora, (2) fuzzy deduplication at the document level within and across datasets, and (3) adding known high-quality reference corpora (an expanded WebText dataset, two internet-based books corpora Books1 and Books2, and English-language Wikipedia) to augment and diversify Common Crawl. During training, datasets are not sampled in proportion to their size; higher-quality datasets (WebText2, Books1, Books2, Wikipedia) are sampled more frequently (up to 2-3 or 3.4 epochs over the 300B training tokens) than the larger but lower-quality filtered Common Crawl (sampled less than once), accepting a small amount of overfitting in exchange for higher-quality training data.",
+    "word_count": 129
+  },
+  {
+    "id": "gpt3-06-00",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "2.3 Training Process",
+    "text": "Larger models typically use a larger batch size but require a smaller learning rate; the gradient noise scale is measured during training to help guide the choice of batch size. To train the larger models without running out of memory, a mixture of model parallelism within each matrix multiply and model parallelism across the layers of the network is used. All models were trained on V100 GPUs on part of a high-bandwidth cluster provided by Microsoft.",
+    "word_count": 76
+  },
+  {
+    "id": "gpt3-07-00",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "2.4 Evaluation",
+    "text": "For few-shot learning, each example in the evaluation set is evaluated by randomly drawing K examples from that task's training set as conditioning, delimited by one or two newlines depending on the task. K can range from 0 up to the maximum the context window allows (n_ctx = 2048), typically fitting 10 to 100 examples; when a development set is available, several values of K are tried on it before running the best value on the test set. For multiple-choice tasks, K examples of context plus correct completion are given, followed by one example of context only, and the model's likelihood for each completion option is compared (normalized per-token, or in some cases by the unconditional probability of the completion). For binary classification, options are given semantically meaningful names (e.g. \"True\"/\"False\") and treated like multiple choice.",
+    "word_count": 136
+  },
+  {
+    "id": "gpt3-07-01",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "2.4 Evaluation",
+    "text": "For free-form completion tasks, beam search is used with a beam width of 4 and a length penalty of alpha = 0.6, scored using F1, BLEU, or exact match depending on the dataset.",
+    "word_count": 33
+  },
+  {
+    "id": "gpt3-08-00",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "3 Results (Overview)",
+    "text": "Language modeling performance follows a power law when making efficient use of training compute, and this trend, established in prior scaling-law work, continues for GPT-3 with only a slight departure after extending it by two more orders of magnitude. The paper evaluates the 8 models (the 175B-parameter GPT-3 and 7 smaller models) on a wide range of datasets grouped into 9 categories: traditional language modeling and cloze/completion tasks; \"closed-book\" question answering (using only information stored in the model's parameters, with no external retrieval); translation; Winograd-Schema-like tasks; commonsense reasoning; reading comprehension; the SuperGLUE benchmark suite; natural language inference (NLI); and synthetic/qualitative tasks designed to probe in-context learning and on-the-fly reasoning (e.g. arithmetic, word unscrambling, using novel words). All tasks are evaluated in the few-shot, one-shot, and zero-shot settings. A recurring pattern across most tasks is that few-shot performance improves rapidly with model scale, more rapidly than zero-shot performance, suggesting larger models are more proficient in-context (meta-)learners; the gap between zero-, one-, and few-shot performance often grows with model capacity.",
+    "word_count": 168
+  },
+  {
+    "id": "gpt3-09-00",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "5 Limitations",
+    "text": "GPT-3 and this analysis of it have a number of limitations. On text synthesis, although overall quality is high, GPT-3 samples still sometimes repeat themselves semantically at the document level, lose coherence over sufficiently long passages, contradict themselves, and occasionally contain non-sequitur sentences. GPT-3 has noticeable difficulty with certain \"comparison\" tasks such as determining whether two words are used the same way in a sentence (WIC) or whether one sentence implies another (ANLI), as well as with a subset of reading comprehension tasks, doing little better than chance one-shot or few-shot on some of these despite strong performance elsewhere. Structurally, the paper focuses on autoregressive language models because sampling and computing likelihoods is straightforward with this model class; this means the experiments do not include bidirectional architectures or denoising objectives, which the literature has shown can improve fine-tuning performance, particularly for tasks involving fill-in-the-blank, comparing two pieces of content, or re-reading a long passage before producing a short answer.",
+    "word_count": 159
+  },
+  {
+    "id": "gpt3-09-01",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "5 Limitations",
+    "text": "A large bidirectional model, or bidirectional models that work with few-/zero-shot learning, are suggested as promising future research directions. More fundamentally, scaling up any LM-like model may eventually run into limits of the pretraining objective itself, which weights every token equally without a notion of what is most important to predict, and large pretrained language models are not grounded in other domains of experience such as video or real-world physical interaction. Poor sample efficiency during pre-training is another shared limitation - GPT-3 still sees far more text during pre-training than a human sees in a lifetime. A further limitation, or at least an open question, is ambiguity about whether few-shot learning in GPT-3 actually learns new tasks \"from scratch\" at inference time or simply recognizes and identifies tasks it has learned during training; this may vary from task to task and is an important unexplored research direction.",
+    "word_count": 147
+  },
+  {
+    "id": "gpt3-09-02",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "5 Limitations",
+    "text": "Models at the scale of GPT-3 are also expensive and inconvenient to run inference on, motivating future work on distillation to smaller task-specific models. Finally, GPT-3 shares limitations common to most deep learning systems: its decisions are not easily interpretable, it is not necessarily well-calibrated on novel inputs, and it retains biases present in its training data, which is of particular concern from a societal perspective and is discussed further under Broader Impacts.",
+    "word_count": 73
+  },
+  {
+    "id": "gpt3-10-00",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "6 Broader Impacts (Summary)",
+    "text": "Language models like GPT-3 have a wide range of beneficial applications, but also raise concerns about misuse. The paper discusses potential misuse of language models (e.g. for generating misleading news articles, spam, phishing content, or impersonating others), issues of fairness, bias, and representation (e.g. gender, race, and religion biases reflected in generated text due to biases in internet training data), and the energy usage / environmental cost of training and using very large language models.",
+    "word_count": 75
+  },
+  {
+    "id": "gpt3-11-00",
+    "paper_id": "gpt3",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_short": "GPT-3",
+    "year": 2020,
+    "section": "8 Conclusion",
+    "text": "This paper presented a 175 billion parameter language model, GPT-3, which shows strong performance on many NLP tasks and benchmarks in the zero-shot, one-shot, and few-shot settings, in some cases nearly matching the performance of state-of-the-art fine-tuned systems, as well as generating high-quality samples and strong qualitative performance at tasks defined on-the-fly. The paper documents roughly predictable trends of scaling in performance without using fine-tuning, and discusses the social impacts of this class of model. Despite many limitations and weaknesses, these results suggest that very large language models may be an important ingredient in the development of adaptable, general language systems.",
+    "word_count": 101
+  }
+]
